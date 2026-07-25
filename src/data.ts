@@ -7,7 +7,8 @@ export const IMG_BASE =
 export const images = {
   logoDark: `${IMG_BASE}/Logo-JC-fundo-escuro-1.png`,
   logoFooter: `${IMG_BASE}/Logo-JC-fundo-escuro.png`,
-  preparationTable: `${IMG_BASE}/ChatGPT-Image-16-de-jul.-de-2026-20_25_46.png`,
+  // Arquivo local (public/images), enviado diretamente pelo usuário — versão final.
+  preparationTable: "/images/comparativo-assessorias.png",
   cardEssencial: `${IMG_BASE}/Adobe-Express-2026-07-16-21.49.49.png`,
   cardOrientada: `${IMG_BASE}/Adobe-Express-2026-07-16-21.50.10-683x1024.png`,
   cardExclusiva: `${IMG_BASE}/Adobe-Express-2026-07-16-21.50.27-683x1024.png`,
@@ -18,6 +19,9 @@ export const videos = {
 };
 
 export const links = {
+  // TODO: trocar por a URL real da página de Termos de Uso assim que o
+  // conteúdo for enviado.
+  terms: "#",
   instagram: "https://www.instagram.com/institutojc/",
   youtube:
     "https://www.youtube.com/channel/UCfCfLIktEB-F_1BYSv2yNGw/videos?view_as=subscriber",

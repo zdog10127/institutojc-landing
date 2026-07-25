@@ -2,7 +2,7 @@ import { faqItems } from "../data";
 
 export default function Faq() {
   return (
-    <section className="bg-jc-gray px-5 py-16 sm:px-6 md:py-20">
+    <section className="bg-jc-cream px-5 py-16 sm:px-6 md:py-20">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="font-display text-3xl font-semibold text-jc-ink sm:text-4xl">
           Perguntas Frequentes

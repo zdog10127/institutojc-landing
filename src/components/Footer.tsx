@@ -25,10 +25,15 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="text-center text-sm text-jc-gold/80 md:text-right">
-          <p className="underline">Termos de Uso</p>
-          <p className="mt-2">© 2026 Instituto JC</p>
-          <p>Todos os direitos reservados</p>
+        <div className="text-center text-sm md:text-right">
+          <a
+            href={links.terms}
+            className="font-medium text-jc-cream underline decoration-jc-gold/60 underline-offset-2 transition hover:text-jc-gold-light"
+          >
+            Termos de Uso
+          </a>
+          <p className="mt-2 text-jc-gold/80">© 2026 Instituto JC</p>
+          <p className="text-jc-gold/80">Todos os direitos reservados</p>
         </div>
       </div>
     </footer>

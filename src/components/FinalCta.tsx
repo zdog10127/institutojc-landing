@@ -1,6 +1,6 @@
 export default function FinalCta() {
   return (
-    <section className="bg-jc-gray px-5 pb-16 text-center sm:px-6 md:pb-20">
+    <section className="bg-jc-cream px-5 pb-16 text-center sm:px-6 md:pb-20">
       <h2 className="font-display mx-auto max-w-2xl text-2xl font-semibold text-jc-ink sm:text-3xl">
         Grandes histórias merecem uma dança inesquecível.
       </h2>

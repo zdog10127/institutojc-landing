@@ -2,7 +2,7 @@ import { steps } from "../data";
 
 export default function HowItWorks() {
   return (
-    <section className="bg-jc-gray px-5 py-16 sm:px-6 md:py-20">
+    <section className="bg-jc-cream px-5 py-16 sm:px-6 md:py-20">
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="font-display text-3xl font-semibold text-jc-ink sm:text-4xl">
           Como funciona?
