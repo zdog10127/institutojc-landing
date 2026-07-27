@@ -31,7 +31,12 @@ export function useScrollGate(boundaryRef: RefObject<HTMLElement | null>) {
     function clamp() {
       const el = boundaryRef.current;
       if (!el) return;
-      const maxScroll = el.offsetTop + el.offsetHeight;
+      // Trava pelo FIM da viewport, não pelo topo — senão o rodapé da tela
+      // já mostra um pedaço da seção seguinte antes da hora.
+      const maxScroll = Math.max(
+        0,
+        el.offsetTop + el.offsetHeight - window.innerHeight,
+      );
       if (window.scrollY > maxScroll) {
         window.scrollTo({ top: maxScroll });
       }
