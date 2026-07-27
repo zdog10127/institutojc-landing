@@ -2,7 +2,7 @@ import { comparisonNote, images } from "../data";
 
 export default function PreparationTable() {
   return (
-    <section className="bg-jc-cream px-5 py-16 sm:px-6 md:py-20">
+    <section className="bg-jc-cream px-5 pb-16 pt-6 sm:px-6 sm:pt-8 md:pb-20">
       <div className="mx-auto max-w-4xl text-center">
         <h2 className="font-display text-3xl font-semibold text-jc-ink sm:text-4xl">
           Sua preparação começa aqui!

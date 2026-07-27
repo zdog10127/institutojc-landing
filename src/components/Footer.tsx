@@ -32,7 +32,7 @@ export default function Footer() {
           >
             Termos de Uso
           </a>
-          <p className="mt-2 text-jc-gold/80">© 2026 Instituto JC</p>
+          <p className="mt-4 text-jc-gold/80">© 2026 Instituto JC</p>
           <p className="text-jc-gold/80">Todos os direitos reservados</p>
         </div>
       </div>

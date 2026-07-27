@@ -24,7 +24,7 @@ export default function Faq() {
                 ›
               </span>
             </summary>
-            <div className="mt-3 space-y-2 whitespace-pre-line text-[15px] leading-relaxed text-gray-700 sm:text-base">
+            <div className="mt-3 space-y-2 whitespace-pre-line text-[15px] leading-relaxed text-gray-500 sm:text-base">
               {item.answer}
             </div>
           </details>

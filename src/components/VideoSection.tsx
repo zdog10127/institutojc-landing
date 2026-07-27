@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { Volume2 } from "lucide-react";
 import { videos } from "../data";
 
 // Seção de vídeo em tela cheia, logo abaixo do hero.
 // - Toca em loop automático, mudo, sem os controles nativos do YouTube.
-// - Botão grande para ativar o áudio (some depois de clicado).
-// - Barra de progresso "falsa": começa rápida e desacelera até o fim,
-//   reiniciando a cada loop do vídeo — só para dar a sensação de vídeo curto.
+// - Botão grande para ativar o áudio; clicar de novo no vídeo muta outra vez.
+// - No mobile o vídeo fica centralizado (sem cortar as bordas); no desktop
+//   ele preenche a tela inteira (cover).
+// - Barra de progresso "falsa": um ciclo independente de 7min10s, que
+//   acelera bem no início e desacelera até o fim — só pra dar a sensação
+//   de vídeo curto. Não está sincronizada com o tempo real do vídeo.
 
 declare global {
   interface Window {
@@ -35,34 +38,39 @@ function loadYouTubeApi(): Promise<void> {
   return apiPromise;
 }
 
-// easing ease-out cúbico: rápido no início, lento no final
-function easeOutCubic(t: number) {
-  return 1 - Math.pow(1 - t, 3);
+// Ciclo fixo da barra de progresso: 7min10s
+const PROGRESS_CYCLE_SECONDS = 7 * 60 + 10;
+
+// easing bem acentuado: dispara rápido no início e desacelera bastante no final
+function easeOutQuint(t: number) {
+  return 1 - Math.pow(1 - t, 5);
 }
 
-export default function VideoSection() {
+const VideoSection = forwardRef<HTMLElement>((_props, ref) => {
   const playerRef = useRef<any>(null);
   const rafRef = useRef<number | null>(null);
-  const startRef = useRef<number>(0);
-  const durationRef = useRef<number>(45); // valor padrão até sabermos a duração real
+  const startRef = useRef<number>(Date.now());
 
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
 
+  // Barra de progresso: ciclo próprio de 7min10s, independente do vídeo real
   useEffect(() => {
-    let cancelled = false;
+    let raf: number;
 
     function tick() {
       const elapsed = (Date.now() - startRef.current) / 1000;
-      const t = Math.min(elapsed / durationRef.current, 1);
-      setProgress(easeOutCubic(t) * 100);
-      rafRef.current = requestAnimationFrame(tick);
+      const t = (elapsed % PROGRESS_CYCLE_SECONDS) / PROGRESS_CYCLE_SECONDS;
+      setProgress(easeOutQuint(t) * 100);
+      raf = requestAnimationFrame(tick);
     }
 
-    function restart() {
-      startRef.current = Date.now();
-      setProgress(0);
-    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
 
     loadYouTubeApi().then(() => {
       if (cancelled) return;
@@ -81,21 +89,13 @@ export default function VideoSection() {
         },
         events: {
           onReady: (e: any) => {
-            const d = e.target.getDuration?.();
-            if (d && d > 0) durationRef.current = d;
-            restart();
-            rafRef.current = requestAnimationFrame(tick);
             e.target.playVideo();
           },
           onStateChange: (e: any) => {
             // 0 = terminou -> reinicia manualmente pra garantir o loop
-            // e reinicia a barra de progresso junto
             if (e.data === 0) {
-              const d = e.target.getDuration?.();
-              if (d && d > 0) durationRef.current = d;
               e.target.seekTo(0, true);
               e.target.playVideo();
-              restart();
             }
           },
         },
@@ -109,39 +109,57 @@ export default function VideoSection() {
     };
   }, []);
 
-  const activateSound = () => {
+  const toggleMute = () => {
     if (!playerRef.current) return;
-    playerRef.current.unMute();
-    playerRef.current.setVolume(100);
-    playerRef.current.playVideo();
-    setMuted(false);
+    if (muted) {
+      playerRef.current.unMute();
+      playerRef.current.setVolume(100);
+      playerRef.current.playVideo();
+      setMuted(false);
+    } else {
+      playerRef.current.mute();
+      setMuted(true);
+    }
   };
 
   return (
-    <section className="relative h-[70vh] w-full overflow-hidden bg-jc-dark sm:h-[85vh] md:h-screen">
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-screen min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2">
-        <div id="jc-hero-video" className="h-full w-full" />
+    <section
+      ref={ref}
+      className="relative h-[70vh] w-full overflow-hidden bg-jc-dark sm:h-[85vh] md:h-screen"
+    >
+      {/* Mobile: vídeo centralizado, mantendo proporção, sem cortar.
+          Desktop (md+): vídeo preenche a tela inteira (cover). */}
+      <div className="absolute inset-0 flex items-center justify-center md:block">
+        <div className="pointer-events-none aspect-video w-full md:absolute md:left-1/2 md:top-1/2 md:aspect-auto md:h-screen md:min-h-full md:w-[177.78vh] md:min-w-full md:-translate-x-1/2 md:-translate-y-1/2">
+          <div id="jc-hero-video" className="h-full w-full" />
+        </div>
       </div>
 
-      {muted && (
-        <button
-          type="button"
-          onClick={activateSound}
-          className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-full bg-jc-dark/70 px-10 py-8 text-jc-cream backdrop-blur-sm transition hover:bg-jc-dark/90"
-        >
-          <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-jc-gold text-jc-gold">
-            <Volume2 className="h-8 w-8" strokeWidth={1.75} />
+      {/* Camada clicável: ativa o som na primeira vez, e alterna mudo/som
+          depois disso. */}
+      <button
+        type="button"
+        onClick={toggleMute}
+        aria-label={muted ? "Ativar som do vídeo" : "Silenciar vídeo"}
+        className="absolute inset-0 flex items-center justify-center"
+      >
+        {muted && (
+          <span className="flex flex-col items-center gap-3 rounded-full bg-jc-dark/70 px-10 py-8 text-jc-cream backdrop-blur-sm transition hover:bg-jc-dark/90">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-jc-gold text-jc-gold">
+              <Volume2 className="h-8 w-8" strokeWidth={1.75} />
+            </span>
+            <span className="font-display text-lg">Ativar som</span>
           </span>
-          <span className="font-display text-lg">Ativar som</span>
-        </button>
-      )}
+        )}
+      </button>
 
       <div className="absolute bottom-0 left-0 h-1.5 w-full bg-white/10">
-        <div
-          className="h-full bg-jc-gold"
-          style={{ width: `${progress}%` }}
-        />
+        <div className="h-full bg-jc-gold" style={{ width: `${progress}%` }} />
       </div>
     </section>
   );
-}
+});
+
+VideoSection.displayName = "VideoSection";
+
+export default VideoSection;
