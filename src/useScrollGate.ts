@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 
 // Impede rolar para além do elemento de referência (o vídeo) durante
 // GATE_DURATION_MS a partir do carregamento da página.
-const GATE_DURATION_MS = 2 * 60 * 1000; // 2 minutos
+const GATE_DURATION_MS = (2 * 60 + 43) * 1000; // 2min43s
 
 export function useScrollGate(boundaryRef: RefObject<HTMLElement | null>) {
   const [unlocked, setUnlocked] = useState(false);

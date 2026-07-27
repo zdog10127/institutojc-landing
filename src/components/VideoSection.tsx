@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Volume2 } from "lucide-react";
 import { videos } from "../data";
-import { useScrollGate } from "../useScrollGate";
 
 // Seção de vídeo em tela cheia, logo abaixo do hero.
 // - Toca em loop automático, mudo, sem os controles nativos do YouTube.
@@ -11,8 +10,11 @@ import { useScrollGate } from "../useScrollGate";
 // - Barra de progresso "falsa": um ciclo independente de 7min10s, que
 //   acelera bem no início e desacelera até o fim — só pra dar a sensação
 //   de vídeo curto. Não está sincronizada com o tempo real do vídeo.
-// - Aviso de "libera em X" fica colado no rodapé do vídeo, perto do
-//   degradê, já que é a última coisa visível enquanto o scroll tá travado.
+//
+// A trava de rolagem (só liberar depois de X minutos) NÃO fica aqui —
+// ela trava um pouco mais abaixo, logo depois do card "Compra Segura"
+// em HowItWorks.tsx, pra dar tempo da pessoa ver o vídeo E o primeiro
+// passo antes de liberar o resto da página.
 
 declare global {
   interface Window {
@@ -49,21 +51,12 @@ function easeOutQuint(t: number) {
   return 1 - Math.pow(1 - t, 5);
 }
 
-function formatTime(totalSeconds: number) {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 export default function VideoSection() {
-  const sectionRef = useRef<HTMLElement>(null);
   const playerRef = useRef<any>(null);
   const startRef = useRef<number>(Date.now());
 
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
-
-  const { unlocked, remainingSeconds } = useScrollGate(sectionRef);
 
   // Barra de progresso: ciclo próprio de 7min10s, independente do vídeo real
   useEffect(() => {
@@ -137,10 +130,7 @@ export default function VideoSection() {
   };
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative h-screen w-full overflow-hidden bg-jc-dark"
-    >
+    <section className="relative h-screen w-full overflow-hidden bg-jc-dark">
       {/* Vídeo preenche a tela inteira (cover) em qualquer tamanho de tela,
           sem barras pretas — recorta as bordas em vez de encolher. */}
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-screen min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 [&>iframe]:h-full [&>iframe]:w-full">
@@ -164,14 +154,6 @@ export default function VideoSection() {
           </span>
         )}
       </button>
-
-      {/* Aviso de scroll travado: fica colado no rodapé do vídeo, logo
-          acima da barra de progresso, bem perto do degradê seguinte. */}
-      {!unlocked && (
-        <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-jc-dark/80 px-4 py-2 text-xs text-jc-cream/80 backdrop-blur-sm">
-          Continue assistindo — libera em {formatTime(remainingSeconds)}
-        </p>
-      )}
 
       <div className="absolute bottom-0 left-0 h-1.5 w-full bg-white/10">
         <div className="h-full bg-jc-gold" style={{ width: `${progress}%` }} />
