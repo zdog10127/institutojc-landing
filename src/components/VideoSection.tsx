@@ -1,15 +1,18 @@
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Volume2 } from "lucide-react";
 import { videos } from "../data";
+import { useScrollGate } from "../useScrollGate";
 
 // Seção de vídeo em tela cheia, logo abaixo do hero.
 // - Toca em loop automático, mudo, sem os controles nativos do YouTube.
 // - Botão grande para ativar o áudio; clicar de novo no vídeo muta outra vez.
-// - No mobile o vídeo fica centralizado (sem cortar as bordas); no desktop
-//   ele preenche a tela inteira (cover).
+// - Preenche a tela inteira (cover) em qualquer tamanho de tela, sem
+//   barras pretas — recorta as bordas quando a proporção não bate.
 // - Barra de progresso "falsa": um ciclo independente de 7min10s, que
 //   acelera bem no início e desacelera até o fim — só pra dar a sensação
 //   de vídeo curto. Não está sincronizada com o tempo real do vídeo.
+// - Aviso de "libera em X" fica colado no rodapé do vídeo, perto do
+//   degradê, já que é a última coisa visível enquanto o scroll tá travado.
 
 declare global {
   interface Window {
@@ -46,13 +49,21 @@ function easeOutQuint(t: number) {
   return 1 - Math.pow(1 - t, 5);
 }
 
-const VideoSection = forwardRef<HTMLElement>((_props, ref) => {
+function formatTime(totalSeconds: number) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+export default function VideoSection() {
+  const sectionRef = useRef<HTMLElement>(null);
   const playerRef = useRef<any>(null);
-  const rafRef = useRef<number | null>(null);
   const startRef = useRef<number>(Date.now());
 
   const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
+
+  const { unlocked, remainingSeconds } = useScrollGate(sectionRef);
 
   // Barra de progresso: ciclo próprio de 7min10s, independente do vídeo real
   useEffect(() => {
@@ -75,6 +86,10 @@ const VideoSection = forwardRef<HTMLElement>((_props, ref) => {
     loadYouTubeApi().then(() => {
       if (cancelled) return;
       playerRef.current = new window.YT.Player("jc-hero-video", {
+        // largura/altura em 100% pra o player preencher o container
+        // (sem isso, o YouTube cria o iframe com tamanho fixo 640x390)
+        width: "100%",
+        height: "100%",
         videoId: videos.heroYoutubeId,
         playerVars: {
           autoplay: 1,
@@ -104,7 +119,6 @@ const VideoSection = forwardRef<HTMLElement>((_props, ref) => {
 
     return () => {
       cancelled = true;
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       playerRef.current?.destroy?.();
     };
   }, []);
@@ -124,15 +138,13 @@ const VideoSection = forwardRef<HTMLElement>((_props, ref) => {
 
   return (
     <section
-      ref={ref}
-      className="relative h-[70vh] w-full overflow-hidden bg-jc-dark sm:h-[85vh] md:h-screen"
+      ref={sectionRef}
+      className="relative h-screen w-full overflow-hidden bg-jc-dark"
     >
-      {/* Mobile: vídeo centralizado, mantendo proporção, sem cortar.
-          Desktop (md+): vídeo preenche a tela inteira (cover). */}
-      <div className="absolute inset-0 flex items-center justify-center md:block">
-        <div className="pointer-events-none aspect-video w-full md:absolute md:left-1/2 md:top-1/2 md:aspect-auto md:h-screen md:min-h-full md:w-[177.78vh] md:min-w-full md:-translate-x-1/2 md:-translate-y-1/2">
-          <div id="jc-hero-video" className="h-full w-full" />
-        </div>
+      {/* Vídeo preenche a tela inteira (cover) em qualquer tamanho de tela,
+          sem barras pretas — recorta as bordas em vez de encolher. */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-screen min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 [&>iframe]:h-full [&>iframe]:w-full">
+        <div id="jc-hero-video" className="h-full w-full" />
       </div>
 
       {/* Camada clicável: ativa o som na primeira vez, e alterna mudo/som
@@ -153,13 +165,17 @@ const VideoSection = forwardRef<HTMLElement>((_props, ref) => {
         )}
       </button>
 
+      {/* Aviso de scroll travado: fica colado no rodapé do vídeo, logo
+          acima da barra de progresso, bem perto do degradê seguinte. */}
+      {!unlocked && (
+        <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-jc-dark/80 px-4 py-2 text-xs text-jc-cream/80 backdrop-blur-sm">
+          Continue assistindo — libera em {formatTime(remainingSeconds)}
+        </p>
+      )}
+
       <div className="absolute bottom-0 left-0 h-1.5 w-full bg-white/10">
         <div className="h-full bg-jc-gold" style={{ width: `${progress}%` }} />
       </div>
     </section>
   );
-});
-
-VideoSection.displayName = "VideoSection";
-
-export default VideoSection;
+}
